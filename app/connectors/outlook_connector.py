@@ -33,7 +33,7 @@ class OutlookConnector:
             authority=authority,
         )
 
-    def login(self) -> str:
+    def login(self, state: str) -> str:
         """Return Microsoft login URL."""
 
         scopes = [settings.microsoft_scope, "offline_access", "openid", "profile"]
@@ -41,6 +41,7 @@ class OutlookConnector:
             scopes=scopes,
             redirect_uri=settings.microsoft_redirect_uri,
             prompt="select_account",
+            state=state,
         )
 
     def callback(self, code: str) -> dict[str, Any]:

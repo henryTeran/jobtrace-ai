@@ -5,9 +5,7 @@ from __future__ import annotations
 import base64
 import json
 import logging
-import secrets
 import time
-from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlencode
 
@@ -33,10 +31,9 @@ class GmailConnector:
     def __init__(self, db: Session):
         self.db = db
 
-    def login(self) -> str:
+    def login(self, state: str) -> str:
         """Return the Google OAuth login URL."""
 
-        state = secrets.token_urlsafe(24)
         params = {
             "client_id": settings.google_client_id,
             "redirect_uri": settings.google_redirect_uri,

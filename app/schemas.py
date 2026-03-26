@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 StatusType = Literal[
@@ -67,8 +67,7 @@ class JobEmailOut(BaseModel):
     snippet: str | None = None
     body_text: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MonthlyReportResponse(BaseModel):

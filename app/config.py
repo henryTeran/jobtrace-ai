@@ -41,6 +41,7 @@ class Settings:
     microsoft_scope: str = os.getenv("MICROSOFT_SCOPE", "Mail.Read")
 
     oauth_state_secret: str = os.getenv("OAUTH_STATE_SECRET", "jobtrace-state")
+    oauth_state_ttl_seconds: int = int(os.getenv("OAUTH_STATE_TTL_SECONDS", "900"))
 
 
 @lru_cache(maxsize=1)

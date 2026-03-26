@@ -36,6 +36,10 @@ pip install -r requirements.txt
 
 Scope utilise: `https://www.googleapis.com/auth/gmail.readonly`
 
+Securite OAuth state:
+- `OAUTH_STATE_SECRET`
+- `OAUTH_STATE_TTL_SECONDS` (par defaut 900 secondes)
+
 ## 3. Configuration OAuth Microsoft (Outlook/Hotmail)
 
 1. Aller sur Azure Portal > App registrations.

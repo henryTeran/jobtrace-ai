@@ -2,15 +2,35 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from fastapi import FastAPI
 
+from app.config import get_settings
 from app.database import Base, engine
 from app.routers import auth_google, auth_microsoft, emails, reports
 from app.utils.logger import configure_logging
 
 
 configure_logging()
-Base.metadata.create_all(bind=engine)
+settings = get_settings()
+
+
+def initialize_runtime() -> None:
+    """Create runtime folders and database schema."""
+
+    Path(settings.report_output_dir).mkdir(parents=True, exist_ok=True)
+
+    if settings.database_url.startswith("sqlite:///"):
+        db_path = settings.database_url.replace("sqlite:///", "", 1)
+        db_dir = Path(db_path).parent
+        if str(db_dir) not in {"", "."}:
+            db_dir.mkdir(parents=True, exist_ok=True)
+
+    Base.metadata.create_all(bind=engine)
+
+
+initialize_runtime()
 
 app = FastAPI(title="JobTrace AI", version="1.0.0")
 
