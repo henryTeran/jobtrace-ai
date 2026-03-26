@@ -74,6 +74,37 @@ class MonthlyReportResponse(BaseModel):
     """Monthly grouped report response."""
 
     data: dict[str, list[JobEmailOut]]
+    pagination: "PaginationMeta"
+
+
+class PaginationMeta(BaseModel):
+    """Pagination metadata for list endpoints."""
+
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class EmailListResponse(BaseModel):
+    """Paginated list of stored emails."""
+
+    items: list[JobEmailOut]
+    pagination: PaginationMeta
+
+
+class OAuthProviderStatus(BaseModel):
+    """OAuth connectivity status for one provider."""
+
+    provider: str
+    connected: bool
+    updated_at: datetime | None = None
+
+
+class OAuthStatusResponse(BaseModel):
+    """OAuth connectivity status for all providers."""
+
+    providers: list[OAuthProviderStatus]
 
 
 class PdfRequest(BaseModel):

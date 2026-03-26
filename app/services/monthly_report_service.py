@@ -4,23 +4,78 @@ from __future__ import annotations
 
 from collections import defaultdict
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import JobEmail
+from app.schemas import PaginationMeta
 
 
-def get_monthly_groups(db: Session, months: list[str] | None = None) -> dict[str, list[JobEmail]]:
+SORT_FIELDS = {
+    "received_at": JobEmail.received_at,
+    "created_at": JobEmail.created_at,
+    "company": JobEmail.company,
+    "status": JobEmail.status,
+    "provider": JobEmail.provider,
+    "subject": JobEmail.subject,
+}
+
+
+def list_job_emails(
+    db: Session,
+    months: list[str] | None = None,
+    page: int = 1,
+    page_size: int = 50,
+    sort_by: str = "received_at",
+    sort_order: str = "desc",
+) -> tuple[list[JobEmail], PaginationMeta]:
+    """Return paginated and sortable list of job emails."""
+
+    if page < 1:
+        page = 1
+    if page_size < 1:
+        page_size = 1
+
+    field = SORT_FIELDS.get(sort_by, JobEmail.received_at)
+    order_expr = field.asc() if sort_order == "asc" else field.desc()
+
+    base_stmt = select(JobEmail)
+    if months:
+        base_stmt = base_stmt.where(JobEmail.month_key.in_(months))
+
+    count_stmt = select(func.count()).select_from(base_stmt.subquery())
+    total = db.execute(count_stmt).scalar_one()
+
+    offset = (page - 1) * page_size
+    rows_stmt = base_stmt.order_by(order_expr).offset(offset).limit(page_size)
+    rows = db.execute(rows_stmt).scalars().all()
+
+    total_pages = (total + page_size - 1) // page_size if total else 0
+    pagination = PaginationMeta(page=page, page_size=page_size, total=total, total_pages=total_pages)
+    return rows, pagination
+
+
+def get_monthly_groups(
+    db: Session,
+    months: list[str] | None = None,
+    page: int = 1,
+    page_size: int = 50,
+    sort_by: str = "received_at",
+    sort_order: str = "desc",
+) -> tuple[dict[str, list[JobEmail]], PaginationMeta]:
     """Return job emails grouped by month key."""
 
-    stmt = select(JobEmail).order_by(JobEmail.received_at.desc())
-    if months:
-        stmt = stmt.where(JobEmail.month_key.in_(months))
-
-    rows = db.execute(stmt).scalars().all()
+    rows, pagination = list_job_emails(
+        db=db,
+        months=months,
+        page=page,
+        page_size=page_size,
+        sort_by=sort_by,
+        sort_order=sort_order,
+    )
     grouped: dict[str, list[JobEmail]] = defaultdict(list)
     for row in rows:
         grouped[row.month_key].append(row)
 
-    ordered = {month: grouped[month] for month in sorted(grouped.keys())}
-    return ordered
+    ordered = {month: grouped[month] for month in sorted(grouped.keys(), reverse=True)}
+    return ordered, pagination

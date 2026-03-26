@@ -8,7 +8,7 @@ from fastapi import FastAPI
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth_google, auth_microsoft, emails, reports
+from app.routers import auth_google, auth_microsoft, auth_status, emails, reports
 from app.utils.logger import configure_logging
 
 
@@ -36,6 +36,7 @@ app = FastAPI(title="JobTrace AI", version="1.0.0")
 
 app.include_router(auth_google.router)
 app.include_router(auth_microsoft.router)
+app.include_router(auth_status.router)
 app.include_router(emails.router)
 app.include_router(reports.router)
 

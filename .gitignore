@@ -15,3 +15,6 @@ venv/
 
 # Generated reports
 reports/*.pdf
+
+# Test cache
+.pytest_cache/

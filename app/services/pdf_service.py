@@ -28,7 +28,14 @@ def generate_monthly_pdf(
 ) -> tuple[str, list[str], int]:
     """Generate the monthly PDF report and return file path, months and row count."""
 
-    grouped = get_monthly_groups(db=db, months=months)
+    grouped, _ = get_monthly_groups(
+        db=db,
+        months=months,
+        page=1,
+        page_size=100000,
+        sort_by="received_at",
+        sort_order="desc",
+    )
     resolved_months = list(grouped.keys())
     total_rows = sum(len(rows) for rows in grouped.values())
 

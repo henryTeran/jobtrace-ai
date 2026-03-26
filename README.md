@@ -72,11 +72,13 @@ Healthcheck:
 
 ### Auth
 - `GET /auth/google/login`
-- `GET /auth/google/callback?code=...`
+- `GET /auth/google/callback?code=...&state=...`
 - `GET /auth/microsoft/login`
-- `GET /auth/microsoft/callback?code=...`
+- `GET /auth/microsoft/callback?code=...&state=...`
+- `GET /auth/status`
 
 ### Emails
+- `GET /emails`
 - `POST /emails/sync`
 
 Exemple body:
@@ -90,6 +92,10 @@ Exemple body:
 ### Reports
 - `GET /reports/monthly`
 - `POST /reports/pdf`
+
+Exemple pagination/tri:
+- `GET /emails?page=1&page_size=20&sort_by=received_at&sort_order=desc`
+- `GET /reports/monthly?page=1&page_size=50&sort_by=received_at&sort_order=desc`
 
 Exemple body PDF:
 ```json
@@ -112,6 +118,7 @@ jobtrace-ai/
 │   ├── routers/
 │   │   ├── auth_google.py
 │   │   ├── auth_microsoft.py
+│   │   ├── auth_status.py
 │   │   ├── emails.py
 │   │   └── reports.py
 │   ├── connectors/
@@ -126,7 +133,12 @@ jobtrace-ai/
 │   │   └── pdf_service.py
 │   └── utils/
 │       ├── logger.py
-│       └── dates.py
+│       ├── dates.py
+│       └── oauth_state.py
+├── tests/
+│   ├── conftest.py
+│   ├── test_api_reports_and_auth.py
+│   └── test_oauth_state.py
 ├── reports/
 ├── data/
 ├── .env.example
@@ -142,3 +154,11 @@ jobtrace-ai/
 - Les emails sont dedoublonnes avec une contrainte unique (`provider`, `message_id`).
 - Le PDF contient un tableau par mois avec style professionnel et lisible.
 - Le traitement est modulaire et pret a evoluer vers un CRM.
+
+## 8. Tests
+
+Lancer les tests:
+
+```bash
+pytest -q
+```
