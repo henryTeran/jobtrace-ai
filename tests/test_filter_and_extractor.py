@@ -75,3 +75,33 @@ def test_strict_vs_full_mode_domain_only_email() -> None:
     assert is_job_related_with_mode(email, mode="strict") is False
     assert is_job_related_with_mode(email, mode="full") is True
     assert is_job_related(email) is False
+
+
+def test_strict_excludes_linkedin_offer_recommendation() -> None:
+    email = _email(
+        subject="Le poste de Software Engineer (Frontend) chez Lorum pourrait vous convenir",
+        snippet="Jobs you may be interested in",
+        body_text="recommended jobs for you",
+        sender="jobs-listings@linkedin.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_github_notification() -> None:
+    email = _email(
+        subject="[repo] chore(deps): bump npm package",
+        snippet="PR #10",
+        body_text="repos updates",
+        sender="notifications@github.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_account_security_email() -> None:
+    email = _email(
+        subject="Votre code a usage unique",
+        snippet="New app connected to your Microsoft account",
+        body_text="account security",
+        sender="account-security-noreply@accountprotection.microsoft.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
