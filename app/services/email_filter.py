@@ -10,8 +10,6 @@ from app.schemas import EmailNormalized
 STRICT_LIFECYCLE_KEYWORDS = {
     "application for",
     "candidature pour",
-    "i am applying",
-    "je postule",
     "your application",
     "votre candidature",
     "thank you for applying",
@@ -28,23 +26,20 @@ STRICT_LIFECYCLE_KEYWORDS = {
     "follow up on your application",
     "we are pleased to",
     "congratulations",
-    "offer stage",
     "offer letter",
-    "unfortunately",
-    "not selected",
-    "regret to inform",
-    "application rejected",
-    "rejected",
-    "declined",
-    "recruiter reached out",
-    "talent acquisition",
+    "offer stage",
+    "your profile",
+    "your candidacy",
+    "not selected for",
+    "regret to inform you",
+    "your application was rejected",
 }
 
 STRICT_LIFECYCLE_REGEX = [
     re.compile(r"\b(application|candidature)\s+(for|pour)\b", re.IGNORECASE),
     re.compile(r"\b(your|votre)\s+(application|candidature)\b", re.IGNORECASE),
-    re.compile(r"\b(interview|entretien)\b", re.IGNORECASE),
-    re.compile(r"\b(not selected|regret to inform|rejected|declined)\b", re.IGNORECASE),
+    re.compile(r"\b(interview invitation|schedule interview|invitation entretien)\b", re.IGNORECASE),
+    re.compile(r"\b(regret to inform you|not selected for|your application was rejected)\b", re.IGNORECASE),
 ]
 
 DOMAINS = {
@@ -88,6 +83,12 @@ NOISE_KEYWORDS = {
     "notifications@github.com",
     "github",
     "repos updates",
+    "what we're seeing in the data",
+    "she applied for months",
+    "why experienced professionals get ignored",
+    "the #1 reason senior cvs get auto-rejected",
+    "ne manquez pas les discussions",
+    "artificial intelligence investors",
 }
 
 NOISE_SENDER_PATTERNS = {
@@ -95,6 +96,12 @@ NOISE_SENDER_PATTERNS = {
     "@accountprotection.microsoft.com",
     "notifications@github.com",
     "noreply@notifications.freelancer.com",
+    "support@match.jobgether.com",
+    "groups-noreply@linkedin.com",
+}
+
+NOISE_DOMAIN_PATTERNS = {
+    "match.jobgether.com",
 }
 
 
@@ -124,8 +131,9 @@ def is_job_related_with_mode(email: EmailNormalized, mode: str = "strict") -> bo
     is_offer_alert = any(keyword in text for keyword in OFFER_ALERT_KEYWORDS)
     has_noise_keyword = any(keyword in text for keyword in NOISE_KEYWORDS)
     is_noise_sender = any(pattern in sender for pattern in NOISE_SENDER_PATTERNS)
+    is_noise_domain = any(domain in sender for domain in NOISE_DOMAIN_PATTERNS)
 
-    if has_noise_keyword or is_noise_sender:
+    if has_noise_keyword or is_noise_sender or is_noise_domain:
         return False
 
     if mode == "full":

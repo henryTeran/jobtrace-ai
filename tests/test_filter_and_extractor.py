@@ -105,3 +105,23 @@ def test_strict_excludes_account_security_email() -> None:
         sender="account-security-noreply@accountprotection.microsoft.com",
     )
     assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_match_jobgether_newsletters() -> None:
+    email = _email(
+        subject="She applied for months. Nothing. Then one thing changed.",
+        snippet="What we're seeing in the data",
+        body_text="The #1 reason senior CVs get auto-rejected",
+        sender="support@match.jobgether.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_linkedin_groups_digest() -> None:
+    email = _email(
+        subject="Ne manquez pas les discussions dans Artificial Intelligence Investors",
+        snippet="groups digest",
+        body_text="Machine Learning, NLP & Computer Vision",
+        sender="groups-noreply@linkedin.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
