@@ -36,9 +36,8 @@ class OutlookConnector:
     def login(self, state: str) -> str:
         """Return Microsoft login URL."""
 
-        scopes = [settings.microsoft_scope, "offline_access", "openid", "profile"]
         return self._msal_app.get_authorization_request_url(
-            scopes=scopes,
+            scopes=[settings.microsoft_scope],
             redirect_uri=settings.microsoft_redirect_uri,
             prompt="select_account",
             state=state,
@@ -49,7 +48,7 @@ class OutlookConnector:
 
         result = self._msal_app.acquire_token_by_authorization_code(
             code=code,
-            scopes=[settings.microsoft_scope, "offline_access"],
+            scopes=[settings.microsoft_scope],
             redirect_uri=settings.microsoft_redirect_uri,
         )
         if "access_token" not in result:
