@@ -58,7 +58,13 @@ OFFER_ALERT_KEYWORDS = {
 
 
 def is_job_related(email: EmailNormalized) -> bool:
-    """Return True for application lifecycle emails and False for generic offers/alerts."""
+    """Backward-compatible wrapper using strict mode by default."""
+
+    return is_job_related_with_mode(email=email, mode="strict")
+
+
+def is_job_related_with_mode(email: EmailNormalized, mode: str = "strict") -> bool:
+    """Return True when an email matches job flow according to the selected mode."""
 
     text = " ".join(
         [
@@ -73,8 +79,13 @@ def is_job_related(email: EmailNormalized) -> bool:
     has_tracking_domain = any(domain in text for domain in DOMAINS)
     is_offer_alert = any(keyword in text for keyword in OFFER_ALERT_KEYWORDS)
 
-    # Drop broad job alerts/newsletters unless they clearly contain application-flow signals.
-    if is_offer_alert and not (has_application_signal or has_tracking_domain):
-        return False
+    if mode == "full":
+        # Full mode keeps a wider net for pipeline visibility but still drops noisy alerts.
+        if is_offer_alert and not (has_application_signal or has_tracking_domain):
+            return False
+        return has_application_signal or has_tracking_domain
 
-    return has_application_signal or has_tracking_domain
+    # Strict mode (default): focus on concrete application lifecycle emails only.
+    if is_offer_alert:
+        return False
+    return has_application_signal

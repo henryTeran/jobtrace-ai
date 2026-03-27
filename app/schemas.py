@@ -18,6 +18,8 @@ StatusType = Literal[
     "inconnu",
 ]
 
+SyncModeType = Literal["strict", "full"]
+
 
 class EmailNormalized(BaseModel):
     """Canonical email shape used internally across providers."""
@@ -38,6 +40,7 @@ class SyncRequest(BaseModel):
 
     providers: list[Literal["gmail", "outlook"]] = Field(default_factory=lambda: ["gmail", "outlook"])
     limit_per_provider: int = Field(default=50, ge=1, le=200)
+    mode: SyncModeType = "strict"
 
 
 class SyncResponse(BaseModel):

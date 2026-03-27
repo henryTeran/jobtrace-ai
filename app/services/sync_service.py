@@ -13,7 +13,7 @@ from app.connectors.outlook_connector import OutlookConnector
 from app.models import JobEmail
 from app.schemas import EmailNormalized
 from app.services.email_extractor import extract_email_data
-from app.services.email_filter import is_job_related
+from app.services.email_filter import is_job_related_with_mode
 from app.services.email_normalizer import normalize_gmail_message, normalize_outlook_message
 from app.utils.dates import month_key_from_datetime
 
@@ -31,48 +31,53 @@ class SyncStats:
     duplicates: int = 0
 
 
-def sync_emails(db: Session, providers: list[str], limit_per_provider: int = 50) -> SyncStats:
+def sync_emails(
+    db: Session,
+    providers: list[str],
+    limit_per_provider: int = 50,
+    mode: str = "strict",
+) -> SyncStats:
     """Synchronize emails for selected providers and persist job-related rows."""
 
     stats = SyncStats()
 
     if "gmail" in providers:
-        stats = _sync_gmail(db=db, limit=limit_per_provider, stats=stats)
+        stats = _sync_gmail(db=db, limit=limit_per_provider, stats=stats, mode=mode)
     if "outlook" in providers:
-        stats = _sync_outlook(db=db, limit=limit_per_provider, stats=stats)
+        stats = _sync_outlook(db=db, limit=limit_per_provider, stats=stats, mode=mode)
 
     return stats
 
 
-def _sync_gmail(db: Session, limit: int, stats: SyncStats) -> SyncStats:
+def _sync_gmail(db: Session, limit: int, stats: SyncStats, mode: str) -> SyncStats:
     connector = GmailConnector(db)
     raw_messages = connector.get_messages(limit=limit)
     stats.fetched += len(raw_messages)
 
     for raw in raw_messages:
         normalized = normalize_gmail_message(raw, connector)
-        _process_one_email(db=db, normalized=normalized, stats=stats)
+        _process_one_email(db=db, normalized=normalized, stats=stats, mode=mode)
 
     return stats
 
 
-def _sync_outlook(db: Session, limit: int, stats: SyncStats) -> SyncStats:
+def _sync_outlook(db: Session, limit: int, stats: SyncStats, mode: str) -> SyncStats:
     connector = OutlookConnector(db)
     raw_messages = connector.get_messages(limit=limit)
     stats.fetched += len(raw_messages)
 
     for raw in raw_messages:
         normalized = normalize_outlook_message(raw)
-        _process_one_email(db=db, normalized=normalized, stats=stats)
+        _process_one_email(db=db, normalized=normalized, stats=stats, mode=mode)
 
     return stats
 
 
-def _process_one_email(db: Session, normalized: EmailNormalized, stats: SyncStats) -> None:
+def _process_one_email(db: Session, normalized: EmailNormalized, stats: SyncStats, mode: str) -> None:
     if not normalized.message_id:
         return
 
-    if not is_job_related(normalized):
+    if not is_job_related_with_mode(normalized, mode=mode):
         return
 
     stats.filtered += 1

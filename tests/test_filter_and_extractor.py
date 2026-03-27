@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 from app.schemas import EmailNormalized
 from app.services.email_extractor import extract_email_data
-from app.services.email_filter import is_job_related
+from app.services.email_filter import is_job_related, is_job_related_with_mode
 
 
 def _email(subject: str, snippet: str = "", body_text: str = "", sender: str = "jobs@example.com") -> EmailNormalized:
@@ -63,3 +63,15 @@ def test_positive_outcome_detected_as_suivi_or_entretien() -> None:
     )
     extracted = extract_email_data(email)
     assert extracted.status in {"suivi", "entretien"}
+
+
+def test_strict_vs_full_mode_domain_only_email() -> None:
+    email = _email(
+        subject="Action required in Greenhouse",
+        snippet="Please review candidate updates",
+        body_text="Open this link: https://boards.greenhouse.io/...",
+        sender="no-reply@greenhouse.io",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+    assert is_job_related_with_mode(email, mode="full") is True
+    assert is_job_related(email) is False
