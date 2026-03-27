@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 from app.schemas import EmailNormalized
 from app.services.email_extractor import extract_email_data
 from app.services.email_filter import is_job_related, is_job_related_with_mode
+from app.services.subject_normalizer import normalize_subject
 
 
 def _email(subject: str, snippet: str = "", body_text: str = "", sender: str = "jobs@example.com") -> EmailNormalized:
@@ -125,3 +126,64 @@ def test_strict_excludes_linkedin_groups_digest() -> None:
         sender="groups-noreply@linkedin.com",
     )
     assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_subject_normalizer_removes_re_and_fwd_prefixes() -> None:
+    subject = "Re: Fwd: FW:   Votre candidature : Développeur Full Stack  "
+    assert normalize_subject(subject) == "Votre candidature : Développeur Full Stack"
+
+
+def test_extract_job_title_from_votre_candidature_en_tant_que() -> None:
+    email = _email(
+        subject="Votre candidature en tant que Full Stack Developer & Database Specialist a été envoyée",
+        snippet="",
+        body_text="",
+        sender="application_no_reply@jobup.ch",
+    )
+    extracted = extract_email_data(email)
+    assert extracted.job_title == "Full Stack Developer & Database Specialist"
+
+
+def test_extract_job_title_and_company_from_colon_chez_format() -> None:
+    email = _email(
+        subject="Votre candidature : Développeur Full Stack (h/f) 50-80% chez Board Management Systems SA",
+        snippet="",
+        body_text="",
+        sender="application_no_reply@jobup.ch",
+    )
+    extracted = extract_email_data(email)
+    assert extracted.job_title == "Développeur Full Stack (h/f) 50-80%"
+    assert extracted.company == "Board Management Systems Sa"
+
+
+def test_extract_job_title_from_candidature_dash_format() -> None:
+    email = _email(
+        subject="Candidature – Apprentissage Dessinateur en architecture CFC 2026",
+        snippet="",
+        body_text="",
+        sender="noreply@example.com",
+    )
+    extracted = extract_email_data(email)
+    assert extracted.job_title == "Apprentissage Dessinateur en architecture CFC 2026"
+
+
+def test_extract_job_title_from_application_for_format() -> None:
+    email = _email(
+        subject="Application for Senior Backend Engineer",
+        snippet="",
+        body_text="",
+        sender="noreply@example.com",
+    )
+    extracted = extract_email_data(email)
+    assert extracted.job_title == "Senior Backend Engineer"
+
+
+def test_extract_job_title_from_bare_role_subject() -> None:
+    email = _email(
+        subject="Apprentissage Dessinateur en architecture CFC 2026",
+        snippet="",
+        body_text="",
+        sender="someone@example.com",
+    )
+    extracted = extract_email_data(email)
+    assert extracted.job_title == "Apprentissage Dessinateur en architecture CFC 2026"
