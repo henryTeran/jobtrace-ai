@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Any
 from urllib.parse import urlencode
 
@@ -65,17 +66,26 @@ class GmailConnector:
         self._save_token(token_payload)
         return token_payload
 
-    def get_messages(self, limit: int = 50) -> list[dict[str, Any]]:
+    def get_messages(
+        self,
+        limit: int = 50,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch message details from Gmail API."""
 
         access_token = self._get_valid_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
 
         with httpx.Client(timeout=30) as client:
+            query = self._build_search_query(from_date=from_date, to_date=to_date)
+            params = {"maxResults": limit}
+            if query:
+                params["q"] = query
             list_response = client.get(
                 f"{self.api_base}/users/me/messages",
                 headers=headers,
-                params={"maxResults": limit},
+                params=params,
             )
             list_response.raise_for_status()
             ids = list_response.json().get("messages", [])
@@ -95,6 +105,20 @@ class GmailConnector:
                     continue
                 messages.append(detail_response.json())
         return messages
+
+    def _build_search_query(
+        self,
+        from_date: datetime | None,
+        to_date: datetime | None,
+    ) -> str:
+        parts: list[str] = []
+        if from_date is not None:
+            from_utc = from_date.astimezone(timezone.utc)
+            parts.append(f"after:{int(from_utc.timestamp())}")
+        if to_date is not None:
+            to_utc = to_date.astimezone(timezone.utc)
+            parts.append(f"before:{int(to_utc.timestamp())}")
+        return " ".join(parts)
 
     def extract_body_text(self, payload: dict[str, Any]) -> str:
         """Extract plain text body from Gmail payload recursively."""

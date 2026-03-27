@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 import time
+from datetime import datetime, timezone
 from typing import Any
 
 import httpx
@@ -58,7 +59,12 @@ class OutlookConnector:
         self._save_token(result)
         return result
 
-    def get_messages(self, limit: int = 50) -> list[dict[str, Any]]:
+    def get_messages(
+        self,
+        limit: int = 50,
+        from_date: datetime | None = None,
+        to_date: datetime | None = None,
+    ) -> list[dict[str, Any]]:
         """Fetch Outlook messages via Microsoft Graph API."""
 
         access_token = self._get_valid_access_token()
@@ -68,12 +74,31 @@ class OutlookConnector:
             "$orderby": "receivedDateTime DESC",
             "$select": "id,conversationId,subject,from,receivedDateTime,bodyPreview,body,internetMessageId",
         }
+        date_filter = self._build_date_filter(from_date=from_date, to_date=to_date)
+        if date_filter:
+            params["$filter"] = date_filter
 
         with httpx.Client(timeout=30) as client:
             response = client.get("https://graph.microsoft.com/v1.0/me/messages", headers=headers, params=params)
             response.raise_for_status()
             payload = response.json()
             return payload.get("value", [])
+
+    def _build_date_filter(
+        self,
+        from_date: datetime | None,
+        to_date: datetime | None,
+    ) -> str | None:
+        filters: list[str] = []
+        if from_date is not None:
+            from_utc = from_date.astimezone(timezone.utc).replace(microsecond=0)
+            filters.append(f"receivedDateTime ge {from_utc.isoformat().replace('+00:00', 'Z')}")
+        if to_date is not None:
+            to_utc = to_date.astimezone(timezone.utc).replace(microsecond=0)
+            filters.append(f"receivedDateTime le {to_utc.isoformat().replace('+00:00', 'Z')}")
+        if not filters:
+            return None
+        return " and ".join(filters)
 
     def _save_token(self, token_payload: dict[str, Any]) -> None:
         existing = self.db.query(OAuthToken).filter(OAuthToken.provider == self.provider).first()

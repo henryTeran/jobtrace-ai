@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -36,22 +37,45 @@ def sync_emails(
     providers: list[str],
     limit_per_provider: int = 50,
     mode: str = "strict",
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
 ) -> SyncStats:
     """Synchronize emails for selected providers and persist job-related rows."""
 
     stats = SyncStats()
 
     if "gmail" in providers:
-        stats = _sync_gmail(db=db, limit=limit_per_provider, stats=stats, mode=mode)
+        stats = _sync_gmail(
+            db=db,
+            limit=limit_per_provider,
+            stats=stats,
+            mode=mode,
+            from_date=from_date,
+            to_date=to_date,
+        )
     if "outlook" in providers:
-        stats = _sync_outlook(db=db, limit=limit_per_provider, stats=stats, mode=mode)
+        stats = _sync_outlook(
+            db=db,
+            limit=limit_per_provider,
+            stats=stats,
+            mode=mode,
+            from_date=from_date,
+            to_date=to_date,
+        )
 
     return stats
 
 
-def _sync_gmail(db: Session, limit: int, stats: SyncStats, mode: str) -> SyncStats:
+def _sync_gmail(
+    db: Session,
+    limit: int,
+    stats: SyncStats,
+    mode: str,
+    from_date: datetime | None,
+    to_date: datetime | None,
+) -> SyncStats:
     connector = GmailConnector(db)
-    raw_messages = connector.get_messages(limit=limit)
+    raw_messages = connector.get_messages(limit=limit, from_date=from_date, to_date=to_date)
     stats.fetched += len(raw_messages)
 
     for raw in raw_messages:
@@ -61,9 +85,16 @@ def _sync_gmail(db: Session, limit: int, stats: SyncStats, mode: str) -> SyncSta
     return stats
 
 
-def _sync_outlook(db: Session, limit: int, stats: SyncStats, mode: str) -> SyncStats:
+def _sync_outlook(
+    db: Session,
+    limit: int,
+    stats: SyncStats,
+    mode: str,
+    from_date: datetime | None,
+    to_date: datetime | None,
+) -> SyncStats:
     connector = OutlookConnector(db)
-    raw_messages = connector.get_messages(limit=limit)
+    raw_messages = connector.get_messages(limit=limit, from_date=from_date, to_date=to_date)
     stats.fetched += len(raw_messages)
 
     for raw in raw_messages:

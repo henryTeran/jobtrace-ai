@@ -63,6 +63,8 @@ def sync_endpoint(payload: SyncRequest, db: Session = Depends(get_db)) -> SyncRe
             providers=payload.providers,
             limit_per_provider=payload.limit_per_provider,
             mode=payload.mode,
+            from_date=payload.from_date,
+            to_date=payload.to_date,
         )
     except Exception as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

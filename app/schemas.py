@@ -41,6 +41,8 @@ class SyncRequest(BaseModel):
     providers: list[Literal["gmail", "outlook"]] = Field(default_factory=lambda: ["gmail", "outlook"])
     limit_per_provider: int = Field(default=50, ge=1, le=200)
     mode: SyncModeType = "strict"
+    from_date: datetime | None = None
+    to_date: datetime | None = None
 
 
 class SyncResponse(BaseModel):
