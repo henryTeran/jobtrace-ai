@@ -5,17 +5,31 @@ from __future__ import annotations
 from app.schemas import EmailNormalized
 
 
-KEYWORDS = {
+APPLICATION_FLOW_KEYWORDS = {
     "application",
+    "application for",
     "candidature",
+    "candidature pour",
+    "applied",
+    "i am applying",
+    "je postule",
+    "thank you for applying",
+    "application received",
+    "application submitted",
+    "votre candidature",
+    "accuse de reception",
     "interview",
     "entretien",
     "recruiter",
-    "job",
-    "position",
-    "thank you for applying",
-    "unfortunately",
+    "talent acquisition",
     "next steps",
+    "follow up",
+    "we are pleased",
+    "congratulations",
+    "offer stage",
+    "unfortunately",
+    "not selected",
+    "regret to inform",
 }
 
 DOMAINS = {
@@ -26,9 +40,25 @@ DOMAINS = {
     "ashbyhq.com",
 }
 
+OFFER_ALERT_KEYWORDS = {
+    "job alert",
+    "new job",
+    "new jobs",
+    "jobs you may be interested",
+    "offres d'emploi",
+    "offre d'emploi",
+    "suggestions d'offres",
+    "recommended jobs",
+    "weekly jobs",
+    "daily jobs",
+    "emplois pour vous",
+    "discover jobs",
+    "new opportunity posted",
+}
+
 
 def is_job_related(email: EmailNormalized) -> bool:
-    """Return True if email appears related to a job application flow."""
+    """Return True for application lifecycle emails and False for generic offers/alerts."""
 
     text = " ".join(
         [
@@ -39,8 +69,12 @@ def is_job_related(email: EmailNormalized) -> bool:
         ]
     ).lower()
 
-    if any(keyword in text for keyword in KEYWORDS):
-        return True
-    if any(domain in text for domain in DOMAINS):
-        return True
-    return False
+    has_application_signal = any(keyword in text for keyword in APPLICATION_FLOW_KEYWORDS)
+    has_tracking_domain = any(domain in text for domain in DOMAINS)
+    is_offer_alert = any(keyword in text for keyword in OFFER_ALERT_KEYWORDS)
+
+    # Drop broad job alerts/newsletters unless they clearly contain application-flow signals.
+    if is_offer_alert and not (has_application_signal or has_tracking_domain):
+        return False
+
+    return has_application_signal or has_tracking_domain

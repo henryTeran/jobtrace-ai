@@ -18,17 +18,69 @@ class ExtractedEmailData:
 
 
 STATUS_RULES: list[tuple[StatusType, tuple[str, ...]]] = [
-    ("refus", ("unfortunately", "regret to inform", "not selected", "declined")),
-    ("entretien", ("interview", "entretien", "schedule", "meet with")),
-    ("accuse_reception", ("thank you for applying", "application received", "we received")),
-    ("recruteur_contact", ("recruiter", "talent acquisition", "reach out")),
-    ("suivi", ("next steps", "follow up", "suivi", "update")),
-    ("candidature", ("application", "candidature", "applied")),
+    (
+        "refus",
+        (
+            "unfortunately",
+            "regret to inform",
+            "not selected",
+            "declined",
+            "rejected",
+            "malheureusement",
+            "nous regrettons",
+            "pas retenu",
+            "no ha sido seleccionado",
+        ),
+    ),
+    (
+        "entretien",
+        (
+            "interview",
+            "entretien",
+            "schedule",
+            "meet with",
+            "technical test",
+            "assessment",
+            "screening call",
+        ),
+    ),
+    (
+        "accuse_reception",
+        (
+            "thank you for applying",
+            "application received",
+            "we received your application",
+            "application submitted",
+            "accuse de reception",
+            "votre candidature a bien ete envoyee",
+            "votre candidature a ete recue",
+        ),
+    ),
+    (
+        "suivi",
+        (
+            "next steps",
+            "follow up",
+            "suivi",
+            "update",
+            "we are pleased",
+            "congratulations",
+            "we are excited",
+            "offer",
+            "offre",
+            "moved forward",
+            "shortlisted",
+        ),
+    ),
+    ("recruteur_contact", ("recruiter", "talent acquisition", "reach out", "headhunter", "sourcer")),
+    ("candidature", ("application", "application for", "candidature", "candidature pour", "applied", "je postule", "i am applying")),
 ]
 
 JOB_TITLE_PATTERNS = [
     re.compile(r"for\s+the\s+(.+?)\s+(role|position)", re.IGNORECASE),
     re.compile(r"application\s+for\s+(.+)$", re.IGNORECASE),
+    re.compile(r"candidature\s+pour\s+(.+)$", re.IGNORECASE),
+    re.compile(r"postule\s+pour\s+(.+)$", re.IGNORECASE),
     re.compile(r"poste\s+de\s+(.+)$", re.IGNORECASE),
 ]
 
