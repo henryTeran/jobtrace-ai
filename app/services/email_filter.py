@@ -92,6 +92,11 @@ NOISE_KEYWORDS = {
     "are you the",
     "who wrote",
     "screening methods for the",
+    "dessinateur en architecture",
+    "architecture cfc",
+    "apprentissage dessinateur",
+    "architecte",
+    "architecture",
 }
 
 NOISE_SENDER_PATTERNS = {

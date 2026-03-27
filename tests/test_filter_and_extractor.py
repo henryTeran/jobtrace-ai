@@ -197,3 +197,13 @@ def test_strict_excludes_academia_mail_updates() -> None:
         sender="updates@academia-mail.com",
     )
     assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_architecture_related_opportunities() -> None:
+    email = _email(
+        subject="Candidature – Apprentissage Dessinateur en architecture CFC 2026",
+        snippet="",
+        body_text="",
+        sender="jesus.rodriguez.pesantez@gmail.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
