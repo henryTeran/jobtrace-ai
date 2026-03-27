@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime
 
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import JobEmail
@@ -28,8 +29,14 @@ def list_job_emails(
     page_size: int = 50,
     sort_by: str = "received_at",
     sort_order: str = "desc",
+    provider: str | None = None,
+    status: str | None = None,
+    company: str | None = None,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    q: str | None = None,
 ) -> tuple[list[JobEmail], PaginationMeta]:
-    """Return paginated and sortable list of job emails."""
+    """Return paginated, sortable and filterable list of job emails."""
 
     if page < 1:
         page = 1
@@ -42,6 +49,26 @@ def list_job_emails(
     base_stmt = select(JobEmail)
     if months:
         base_stmt = base_stmt.where(JobEmail.month_key.in_(months))
+    if provider:
+        base_stmt = base_stmt.where(JobEmail.provider == provider)
+    if status:
+        base_stmt = base_stmt.where(JobEmail.status == status)
+    if company:
+        base_stmt = base_stmt.where(JobEmail.company.ilike(f"%{company}%"))
+    if date_from:
+        base_stmt = base_stmt.where(JobEmail.received_at >= date_from)
+    if date_to:
+        base_stmt = base_stmt.where(JobEmail.received_at <= date_to)
+    if q:
+        token = f"%{q}%"
+        base_stmt = base_stmt.where(
+            or_(
+                JobEmail.subject.ilike(token),
+                JobEmail.snippet.ilike(token),
+                JobEmail.company.ilike(token),
+                JobEmail.job_title.ilike(token),
+            )
+        )
 
     count_stmt = select(func.count()).select_from(base_stmt.subquery())
     total = db.execute(count_stmt).scalar_one()
