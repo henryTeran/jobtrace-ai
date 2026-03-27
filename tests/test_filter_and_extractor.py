@@ -187,3 +187,13 @@ def test_extract_job_title_from_bare_role_subject() -> None:
     )
     extracted = extract_email_data(email)
     assert extracted.job_title == "Apprentissage Dessinateur en architecture CFC 2026"
+
+
+def test_strict_excludes_academia_mail_updates() -> None:
+    email = _email(
+        subject='Are you the HENRY TERAN who wrote "Efficacy of three greenhouse screening methods for the..."?',
+        snippet="research digest",
+        body_text="updates newsletter",
+        sender="updates@academia-mail.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False

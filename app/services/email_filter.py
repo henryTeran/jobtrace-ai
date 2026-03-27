@@ -89,6 +89,9 @@ NOISE_KEYWORDS = {
     "the #1 reason senior cvs get auto-rejected",
     "ne manquez pas les discussions",
     "artificial intelligence investors",
+    "are you the",
+    "who wrote",
+    "screening methods for the",
 }
 
 NOISE_SENDER_PATTERNS = {
@@ -98,10 +101,12 @@ NOISE_SENDER_PATTERNS = {
     "noreply@notifications.freelancer.com",
     "support@match.jobgether.com",
     "groups-noreply@linkedin.com",
+    "updates@academia-mail.com",
 }
 
 NOISE_DOMAIN_PATTERNS = {
     "match.jobgether.com",
+    "academia-mail.com",
 }
 
 
