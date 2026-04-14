@@ -5,11 +5,15 @@ from __future__ import annotations
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
-from app.config import get_settings
-from app.database import Base, engine
-from app.routers import auth_google, auth_microsoft, auth_status, emails, reports
-from app.utils.logger import configure_logging
+from app.core.config import get_settings
+from app.core.database import Base, engine
+from app.core.logger import configure_logging
+from app.modules.auth.router import router as auth_router
+from app.modules.email.router import router as email_router
+from app.modules.report.router import router as report_router
 
 
 configure_logging()
@@ -34,11 +38,18 @@ initialize_runtime()
 
 app = FastAPI(title="JobTrace AI", version="1.0.0")
 
-app.include_router(auth_google.router)
-app.include_router(auth_microsoft.router)
-app.include_router(auth_status.router)
-app.include_router(emails.router)
-app.include_router(reports.router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(settings.cors_allow_origins),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth_router)
+app.include_router(email_router)
+app.include_router(report_router)
+app.mount("/reports/files", StaticFiles(directory=settings.report_output_dir), name="report-files")
 
 
 @app.get("/health", tags=["health"])

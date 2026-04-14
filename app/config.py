@@ -24,6 +24,14 @@ class Settings:
     database_url: str = os.getenv("DATABASE_URL", "sqlite:///./data/jobtrace.db")
 
     report_output_dir: str = os.getenv("REPORT_OUTPUT_DIR", "reports")
+    cors_allow_origins: tuple[str, ...] = tuple(
+        origin.strip()
+        for origin in os.getenv(
+            "CORS_ALLOW_ORIGINS",
+            "http://localhost:5173,http://127.0.0.1:5173",
+        ).split(",")
+        if origin.strip()
+    )
 
     google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
     google_client_secret: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
