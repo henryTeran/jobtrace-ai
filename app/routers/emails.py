@@ -9,12 +9,19 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas import EmailListResponse, JobEmailOut, SyncRequest, SyncResponse, StatusType
-from app.services.monthly_report_service import list_job_emails
+from app.schemas import EmailListResponse, EmailStats, JobEmailOut, SyncRequest, SyncResponse, StatusType
+from app.services.monthly_report_service import get_email_stats, list_job_emails
 from app.services.sync_service import sync_emails
 
 
 router = APIRouter(prefix="/emails", tags=["emails"])
+
+
+@router.get("/stats", response_model=EmailStats)
+def email_stats(db: Session = Depends(get_db)) -> EmailStats:
+    """Return aggregated statistics: total, breakdown by status, provider, and monthly trend."""
+    result = get_email_stats(db)
+    return EmailStats(**result)
 
 
 @router.get("", response_model=EmailListResponse)

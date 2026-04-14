@@ -39,7 +39,7 @@ class SyncRequest(BaseModel):
     """Manual synchronization request options."""
 
     providers: list[Literal["gmail", "outlook"]] = Field(default_factory=lambda: ["gmail", "outlook"])
-    limit_per_provider: int = Field(default=50, ge=1, le=200)
+    limit_per_provider: int = Field(default=50, ge=1, le=5000)
     mode: SyncModeType = "strict"
     from_date: datetime | None = None
     to_date: datetime | None = None
@@ -119,9 +119,44 @@ class PdfRequest(BaseModel):
     output_filename: str | None = None
 
 
+class PdfFilteredRequest(BaseModel):
+    """Filtered PDF generation request."""
+
+    provider: Literal["gmail", "outlook"] | None = None
+    status: StatusType | None = None
+    q: str | None = Field(default=None, max_length=100)
+    date_from: datetime | None = None
+    date_to: datetime | None = None
+    sort_by: Literal["received_at", "created_at", "company", "status", "provider", "subject"] = "received_at"
+    sort_order: Literal["asc", "desc"] = "desc"
+    output_filename: str | None = None
+
+
 class PdfResponse(BaseModel):
     """PDF generation response."""
 
     file_path: str
     months: list[str]
     rows: int
+
+
+class StatusUpdateRequest(BaseModel):
+    """Request body for manually updating an email status."""
+
+    status: StatusType
+
+
+class MonthCount(BaseModel):
+    """Email count for one month."""
+
+    month: str
+    count: int
+
+
+class EmailStats(BaseModel):
+    """Aggregated email statistics for the dashboard."""
+
+    total: int
+    by_status: dict[str, int]
+    by_provider: dict[str, int]
+    by_month: list[MonthCount]

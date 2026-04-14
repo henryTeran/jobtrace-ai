@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections import defaultdict
 from datetime import datetime
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, not_, or_, select
 from sqlalchemy.orm import Session
 
 from app.models import JobEmail
-from app.schemas import PaginationMeta
+from app.schemas import MonthCount, PaginationMeta
 
 
 SORT_FIELDS = {
@@ -20,6 +20,34 @@ SORT_FIELDS = {
     "provider": JobEmail.provider,
     "subject": JobEmail.subject,
 }
+
+OFFER_ALERT_PATTERNS = (
+    "%new job opportunit%",
+    "%new%opportunit%",
+    "%jobs you may be interested%",
+    "%recommended jobs%",
+    "%weekly jobs%",
+    "%daily jobs%",
+    "%discover jobs%",
+    "%listing alert%",
+    "%[searching]%",
+)
+
+OFFER_ALERT_SENDER_PATTERNS = (
+    "%jobs-noreply%",
+    "%jobalerts%",
+    "%job-alert%",
+)
+
+
+def _apply_offer_exclusion(stmt):
+    offer_like = or_(
+        *[JobEmail.subject.ilike(pattern) for pattern in OFFER_ALERT_PATTERNS],
+        *[JobEmail.snippet.ilike(pattern) for pattern in OFFER_ALERT_PATTERNS],
+        *[JobEmail.body_text.ilike(pattern) for pattern in OFFER_ALERT_PATTERNS],
+        *[JobEmail.sender_email.ilike(pattern) for pattern in OFFER_ALERT_SENDER_PATTERNS],
+    )
+    return stmt.where(not_(offer_like))
 
 
 def list_job_emails(
@@ -47,6 +75,7 @@ def list_job_emails(
     order_expr = field.asc() if sort_order == "asc" else field.desc()
 
     base_stmt = select(JobEmail)
+    base_stmt = _apply_offer_exclusion(base_stmt)
     if months:
         base_stmt = base_stmt.where(JobEmail.month_key.in_(months))
     if provider:
@@ -106,3 +135,44 @@ def get_monthly_groups(
 
     ordered = {month: grouped[month] for month in sorted(grouped.keys(), reverse=True)}
     return ordered, pagination
+
+
+def get_email_stats(db: Session) -> dict:
+    """Return aggregated email statistics: total, by_status, by_provider, by_month (last 12)."""
+
+    base = select(JobEmail)
+    base = _apply_offer_exclusion(base).subquery()
+
+    # total
+    total = db.execute(select(func.count()).select_from(base)).scalar_one()
+
+    # by_status
+    by_status_rows = db.execute(
+        select(base.c.status, func.count().label("cnt"))
+        .select_from(base)
+        .group_by(base.c.status)
+    ).all()
+    by_status = {row.status: row.cnt for row in by_status_rows}
+
+    # by_provider
+    by_provider_rows = db.execute(
+        select(base.c.provider, func.count().label("cnt"))
+        .select_from(base)
+        .group_by(base.c.provider)
+    ).all()
+    by_provider = {row.provider: row.cnt for row in by_provider_rows}
+
+    # by_month — last 12 months, sorted chronologically
+    by_month_rows = db.execute(
+        select(base.c.month_key, func.count().label("cnt"))
+        .select_from(base)
+        .group_by(base.c.month_key)
+        .order_by(base.c.month_key.desc())
+        .limit(12)
+    ).all()
+    by_month = [
+        MonthCount(month=row.month_key, count=row.cnt)
+        for row in sorted(by_month_rows, key=lambda r: r.month_key)
+    ]
+
+    return {"total": total, "by_status": by_status, "by_provider": by_provider, "by_month": by_month}
