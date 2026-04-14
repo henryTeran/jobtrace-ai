@@ -74,8 +74,18 @@ def test_strict_vs_full_mode_domain_only_email() -> None:
         sender="no-reply@greenhouse.io",
     )
     assert is_job_related_with_mode(email, mode="strict") is False
-    assert is_job_related_with_mode(email, mode="full") is True
+    assert is_job_related_with_mode(email, mode="full") is False
     assert is_job_related(email) is False
+
+
+def test_full_includes_ats_email_with_application_context() -> None:
+    email = _email(
+        subject="Update on your application via Greenhouse",
+        snippet="Your application has moved to next stage",
+        body_text="Open this link: https://boards.greenhouse.io/...",
+        sender="no-reply@greenhouse.io",
+    )
+    assert is_job_related_with_mode(email, mode="full") is True
 
 
 def test_strict_excludes_linkedin_offer_recommendation() -> None:
@@ -205,5 +215,25 @@ def test_strict_excludes_architecture_related_opportunities() -> None:
         snippet="",
         body_text="",
         sender="jesus.rodriguez.pesantez@gmail.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_new_job_opportunities_posted_subject() -> None:
+    email = _email(
+        subject="New job opportunities posted",
+        snippet="Fresh openings this week",
+        body_text="Recommended jobs for your profile",
+        sender="jobs-noreply@linkedin.com",
+    )
+    assert is_job_related_with_mode(email, mode="strict") is False
+
+
+def test_strict_excludes_new_full_stack_developer_opportunity_subject() -> None:
+    email = _email(
+        subject="New Full Stack Developer Opportunity",
+        snippet="A new opportunity matches your profile",
+        body_text="Apply now to discover this role",
+        sender="jobalerts@example.com",
     )
     assert is_job_related_with_mode(email, mode="strict") is False

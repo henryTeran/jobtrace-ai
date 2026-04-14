@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 
 from sqlalchemy.orm import Session
 
@@ -118,3 +119,60 @@ def test_emails_list_endpoint_pagination(client, db_session: Session) -> None:
     assert payload["pagination"]["total"] == 3
     assert len(payload["items"]) == 1
     assert payload["items"][0]["message_id"] == "g2"
+
+
+def test_emails_list_excludes_offer_alert_rows(client, db_session: Session) -> None:
+    _seed_job_emails(db_session)
+    db_session.add(
+        JobEmail(
+            provider="gmail",
+            message_id="g-offer-1",
+            thread_id="t-offer-1",
+            subject="New Full Stack Developer Opportunity",
+            sender_email="jobs-noreply@marketplace.example",
+            sender_name="Marketplace",
+            received_at=datetime(2026, 4, 10, 9, 0, tzinfo=timezone.utc),
+            month_key="2026-04",
+            company="Marketplace",
+            job_title="Full Stack Developer",
+            status="suivi",
+            snippet="Recommended jobs for your profile",
+            body_text="New job opportunities posted",
+        )
+    )
+    db_session.commit()
+
+    response = client.get(
+        "/emails",
+        params={
+            "page": 1,
+            "page_size": 20,
+            "sort_by": "received_at",
+            "sort_order": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["pagination"]["total"] == 3
+    message_ids = [item["message_id"] for item in payload["items"]]
+    assert "g-offer-1" not in message_ids
+
+
+def test_reports_filtered_pdf_generation(client, db_session: Session) -> None:
+    _seed_job_emails(db_session)
+
+    response = client.post(
+        "/reports/pdf/filtered",
+        json={
+            "provider": "gmail",
+            "sort_by": "received_at",
+            "sort_order": "desc",
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["rows"] >= 1
+    assert isinstance(payload["months"], list)
+    assert Path(payload["file_path"]).exists()
